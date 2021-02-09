@@ -1,0 +1,3 @@
+[submodule "src/main/resources/Signal-Server"]
+	path = src/main/resources/Signal-Server
+	url = https://github.com/lmux/Signal-Server

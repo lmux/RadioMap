@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <link rel="icon" th:href="@{/images/favicon.svg}" type="image/x-icon">
+    <title>RadioMap</title>
+    <style>
+        /*map covers whole website*/
+        body {
+            margin: 0;
+            padding: 0
+        }
+        #mapid {
+            position: absolute;
+            width: 100%;
+            top: 0;
+            bottom: 0;
+            z-index: 2
+        }
+        #signalStrengthControl {
+            width: 230px;
+            text-align: center;
+        }
+        .signalBox {
+            margin: 5px;
+            width: 30px;
+            height: 20px;
+            display: inline-block;
+        }
+        #veryStrongSignalBox {
+            background: #ffa50080;
+        }
+        #strongSignalBox {
+            background: #ffff0080;
+        }
+        #goodSignalBox {
+            background: #00ff0080;
+        }
+        #weakSignalBox {
+            background: #0094ff80;
+        }
+        .antennaPopupForm {
+            display: flex;
+            flex-direction: column;
+        }
+        .antennaPopupForm label {
+            display: flex;
+            justify-content: space-between;
+        }
+        /*makes all inputs and select same size and aligns them on right side with minimum fixed size
+        not cutting of latitude and longitude and other input values*/
+        .antennaPopupForm label input,
+        .antennaPopupForm label select {
+            min-width: 85px;
+            width: 40%;
+            text-align: left;
+            /*keep popup small in size*/
+            padding: 0;
+            margin: 0;
+            /*makes width of all boxes equal*/
+            box-sizing: border-box;
+        }
+        /*centers and stretches advanced options link*/
+        .antennaPopupForm a {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+        }
+        /* Shows lat/lon number input as text input to remove Arrows/Spinners
+        for Chrome, Safari, Edge, Opera */
+        .antennaPopupForm #lat::-webkit-outer-spin-button,
+        .antennaPopupForm #lat::-webkit-inner-spin-button,
+        .antennaPopupForm #lon::-webkit-outer-spin-button,
+        .antennaPopupForm #lon::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        /* Shows lat/lon number input as text input to remove Arrows/Spinners
+        for Firefox*/
+        .antennaPopupForm #lat[type=number], .antennaPopupForm #lon[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+    <link rel="stylesheet" th:href="@{/leaflet/leaflet.css}"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin=""/>
+    <script th:src="@{/leaflet/leaflet.js}"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin="">
+    </script>
+    <script th:src="@{/leaflet/leaflet.toolbar.js}"></script>
+    <link rel="stylesheet" th:href="@{/leaflet/leaflet.toolbar.css}"/>
+    <script th:src="@{/jszip.min.js}"></script>
+</head>
+<body>
+<div id="mapid"></div>
+
+<script th:inline="javascript">
+    let openstreetmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+    //possibility to add more map layers
+    //streets   = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    // {attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+    let map = L.map('mapid', {
+        center: [51.34, 12.4],
+        zoom: 13,
+        // layers: [openstreetmap, streets]
+        layers: [openstreetmap]
+    });
+    // https://leafletjs.com/examples/layers-control/
+    let baseMaps = {
+        "OpenStreetMap": openstreetmap,
+        // "Streets": streets
+    };
+    //creates the element for switching between different map layers in upper right corner
+    L.control.layers(baseMaps).addTo(map);
+
+    let addAntennaMarkerAction = L.Toolbar2.Action.extend({
+        options: {
+            toolbarIcon: {
+                html: '&#128225;',
+                tooltip: 'Add new antenna location'
+            }
+        },
+        addHooks: function () {
+            addAntennaMarker(map);
+        }
+    });
+    let addExportMarkerCoverageAction = L.Toolbar2.Action.extend({
+        options: {
+            toolbarIcon: {
+                html: '&#128279;',
+                tooltip: 'Export antenna markers and coverage in .kmz file'
+            }
+        },
+        addHooks: function () {
+            exportMarkerCoverageAction(map);
+        }
+    });
+    //toolbar with elements for adding antenna marker and exporting antenna markers and coverages
+    new L.Toolbar2.Control({
+        position: 'topleft',
+        actions: [addAntennaMarkerAction, addExportMarkerCoverageAction]
+    }).addTo(map);
+    //distance scale shown in the lower left corner of the map view
+    L.control.scale().addTo(map);
+
+    //legend showing signal strength colour values
+    L.Control.SignalStrength = L.Control.extend({
+        onAdd: function (map) {
+            let controlBox = L.DomUtil.create('div',"leaflet-bar, leaflet-control-layers");
+            //found on https://stackoverflow.com/questions/30416383/set-tooltip-on-custom-leafletjs-control
+            controlBox.title = "Signal strength values and their colour representation";
+            controlBox.id = "signalStrengthControl";
+            let signalLabel = L.DomUtil.create('span', "signalLabel", controlBox);
+            signalLabel.innerHTML = "Signal";
+            let veryStrongSignalBox = L.DomUtil.create('span', "signalBox", controlBox);
+            veryStrongSignalBox.id = "veryStrongSignalBox";
+            veryStrongSignalBox.innerHTML = "-20";
+            let strongSignalBox = L.DomUtil.create('span', "signalBox", controlBox);
+            strongSignalBox.id = "strongSignalBox";
+            strongSignalBox.innerHTML = "-40";
+            let goodSignalBox = L.DomUtil.create('span', "signalBox", controlBox);
+            goodSignalBox.id = "goodSignalBox";
+            goodSignalBox.innerHTML = "-60";
+            let weakSignalBox = L.DomUtil.create('span', "signalBox", controlBox);
+            weakSignalBox.id = "weakSignalBox";
+            weakSignalBox.innerHTML = "-90";
+            let signalUnit = L.DomUtil.create('span', "signalUnit", controlBox);
+            signalUnit.innerHTML = "dBm";
+            return controlBox;
+        },
+        onRemove: function (map) {
+            // Nothing to do here
+        }
+    });
+    L.control.signalStrength = function (opts) {
+        return new L.Control.SignalStrength(opts);
+    }
+    L.control.signalStrength({position: 'bottomright'}).addTo(map);
+
+    /**
+     * Creates the marker representing an antenna with form for creating and updating coverage and button for removing antenna.
+     *
+     * @param {L.map} map The leaflet map object the marker is added to..
+     */
+    function addAntennaMarker(map) {
+        const antennaIcon = L.icon({
+            iconUrl: '/images/antennamarkerroundwhite.svg',
+            iconAnchor: [20, 20],// [20, 56] for black marker
+            popupAnchor: [0, -20],// [0, -56] for black marker
+            tooltipAnchor: [20, -10]// [20, -28] for black marker
+        });
+        let markerPos = map.getCenter();
+        let marker = L.marker(markerPos, {draggable: true, autoPan: true, icon: antennaIcon}).addTo(map)
+            .bindTooltip("Drag and click antenna to change its configuration").openTooltip();
+        let antennaPopup = createAntennaCoverageForm(marker);
+        marker.bindPopup(antennaPopup, {className: "antennaPopup"});
+        //https://leafletjs.com/examples/quick-start/ leaflet event handler example
+        marker.on("dragend", e => {
+            marker.openPopup();
+        });
+    }
+
+    /**
+     * Exports antenna markers and coverages as kmz file including coverages as pngs if they exist on map,
+     * else opens alert notifying user
+     *
+     * @param {L.map} map The leaflet map object the coverage and markers are exported from.
+     */
+    async function exportMarkerCoverageAction(map) {
+        //only export if marker or coverage found
+        let makeExport = false;
+        let coverageImageElements = [];
+        //create beginning of xml for .kml-file
+        let kmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+            "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n";
+
+        //Iterate over all layers of the map to find markers and coverages
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) { //marker layer with a single marker
+                makeExport = true;
+                let markerDescription = "";
+                //create array from node to iterate over it
+                //see https://stackoverflow.com/questions/49956141/how-to-iterate-on-htmlcollection
+                Array.from(layer._popup._content).forEach(function (entry) {
+                    if (entry.nodeName === "INPUT" || entry.nodeName === "SELECT")
+                        //filter out other form elements like buttons to create list of antenna parameters
+                        markerDescription = markerDescription.concat(entry.previousSibling.data + entry.value + "\n");
+                });
+                markerDescription = markerDescription.trimRight();
+                //https://developers.google.com/kml/documentation/kmlreference#placemark
+                let placeMarkKML = "<Placemark>\n" +
+                    "   <name>" + layer._latlng.lat + "," + layer._latlng.lng + "</name>\n" +
+                    "   <description>" + markerDescription + "</description>\n" +
+                    "   <Point>\n" +
+                    "       <coordinates>" + layer._latlng.lng + "," + layer._latlng.lat + "</coordinates>\n" +
+                    "   </Point>\n" +
+                    "</Placemark>\n";
+                kmlString = kmlString.concat(placeMarkKML);
+
+            } else if (layer instanceof L.ImageOverlay) { //image layer with a single image (coverage)
+                makeExport = true;
+                //https://developers.google.com/kml/documentation/kmlreference#groundoverlay
+                let groundOverlayKML = "<GroundOverlay>\n" +
+                    "   <name>" + layer._image.alt + "</name>\n" +
+                    "   <color>#7f7f7fff</color>\n" +
+                    "   <Icon>\n" +
+                    "       <href>" + layer._image.attributes.src.nodeValue + "</href>\n" +
+                    "   </Icon>\n" +
+                    "   <LatLonBox>\n" +
+                    "       <north>" + layer._bounds._northEast.lat + "</north>\n" +
+                    "       <east>" + layer._bounds._northEast.lng + "</east>\n" +
+                    "       <south>" + layer._bounds._southWest.lat + "</south>\n" +
+                    "       <west>" + layer._bounds._southWest.lng + "</west>\n" +
+                    "   </LatLonBox>\n" +
+                    "</GroundOverlay>\n";
+                kmlString = kmlString.concat(groundOverlayKML);
+                coverageImageElements.push(layer._image);
+            }
+        });
+        kmlString = kmlString.concat("</kml>");
+        if (makeExport) {
+            if (window.navigator.msSaveOrOpenBlob) {// IE10+
+                // see https://stackoverflow.com/questions/13405129/javascript-create-and-save-file
+                // only download kml file
+                let file = new Blob([kmlString], {type: text / xml});
+                window.navigator.msSaveOrOpenBlob(file, "radiomap.kml");
+            } else {
+                //use JSzip for every other browser
+                let zip = new JSZip();
+                zip.file("radiomap.kml", kmlString);
+                await createImageZipBlobs(coverageImageElements, zip);
+                zip.generateAsync({type: "blob"}).then(function (content) {
+                    downloadFile(content, "radiomap.kmz", "zip");
+                });
+                //old code that created image blobs from local img elements via canvas
+                //real size of image gets lost in img element, saving size + creating canvas not worth saving
+                // low costs of fetching small images
+                // https://stackoverflow.com/questions/37576685/using-async-await-with-a-foreach-loop
+                // https://stackoverflow.com/questions/10754661/javascript-getting-imagedata-without-canvas
+                // Promise.all(coverageImageElements.map(async (imageElement) => {
+                //     return new Promise((resolve, reject) => {
+                //         let canvas = document.createElement('canvas');
+                //         let context = canvas.getContext('2d');
+                //         canvas.width = imageElement.width;
+                //         canvas.height = imageElement.height;
+                //         context.drawImage(imageElement, 0, 0);
+                //         canvas.toBlob(function (blob) {
+                //             zip.file(imageElement._url, blob);
+                //             resolve();
+                //         });
+                //     })
+                // })).then(values => {
+                //     zip.generateAsync({type: "blob"}).then(function (content) {
+                //         downloadFile(content, "radiomap.kmz", "zip")
+                //     });
+                // });
+            }
+        } else {
+            alert("No markers or coverage to export.");
+        }
+    }
+
+    /**
+     * Creates image blobs from an array of HTMLImageElements by fetching the image sources and puts them into the zip file.
+     *
+     * @param {HTMLImageElement[]} htmlImageElements The array of HTMLImageElements the image blobs are created from.
+     * @param {JSZip} zip The zip file the image blobs are added to.
+     */
+    function createImageZipBlobs(htmlImageElements, zip) {
+        htmlImageElements.map((imageElement) => {
+            let imagePath = imageElement.attributes.src.nodeValue;
+            const imageBlob = fetch(imagePath).then(response => response.blob());
+            zip.file(imagePath, imageBlob);
+        });
+    }
+
+    /**
+     * Downloads the data to a file with given type.
+     *
+     * @see https://stackoverflow.com/questions/13405129/javascript-create-and-save-file
+     * @param {Array} data The data which gets written in the file.
+     * @param {String} filename The name of the file.
+     * @param {MimeType} type The MIME type of the data.
+     */
+    function downloadFile(data, filename, type) {
+        //supported for every browser except IE10+
+        let file = new Blob([data], {type: type});
+        let a = document.createElement("a"),
+            url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);https://developer.mozilla.org/en-US/docs/Glossary/MIME_type
+        a.click();
+        setTimeout(function () {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 0);
+    }
+
+    /**
+     * Creates and returns the form for creating and removing the coverage of the antenna and button for removing antenna.
+     *
+     * @see https://www.geeksforgeeks.org/how-to-create-a-form-dynamically-with-the-javascript/
+     * @param {L.marker} marker The marker representing the antenna.
+     * @return {HTMLFormElement} The form for creating and removing the coverage.
+     */
+    function createAntennaCoverageForm(marker) {
+        //marker needed for position data and removing it via button in form
+        //https://www.geeksforgeeks.org/how-to-create-a-form-dynamically-with-the-javascript/
+
+        //holds all html elements of the antenna form
+        let antennaForm = document.createElement("form");
+        antennaForm.setAttribute("class", "antennaPopupForm");
+
+        //holds 0 or 1 coverage image of antenna as a leaflet image overlay
+        // used for showing/updating/removing coverage
+        let coverageOverlay;
+
+        //Tx Latitude (decimal degrees) -70/+70
+        let latInput = document.createElement("input");
+        setAttributes(latInput, {
+            type: "number",
+            id: "lat",
+            name: "lat",
+            min: "-90",
+            max: "90",
+            step: "any",
+            value: marker._latlng.lat.toFixed(6)
+        });
+        //Tx Longitude (decimal degrees) -180/+180
+        let lonInput = document.createElement("input");
+        setAttributes(lonInput, {
+            type: "number",
+            id: "lon",
+            name: "lon",
+            min: "-180",
+            max: "180",
+            step: "any",
+            value: marker._latlng.lng.toFixed(6)
+        });
+        //Tx Height (above ground)
+        let txhInput = document.createElement("input");
+        setAttributes(txhInput, {
+            type: "number",
+            id: "txh",
+            name: "txh",
+            min: "0",
+            max: "10000",
+            step: "0.1",
+            value: "5.0",
+            size: "6"
+        });
+        //Tx Total Effective Radiated Power in Watts (dBd) inc Tx+Rx gain. 2.14dBi = 0dBd
+        let erpInput = document.createElement("input");
+        setAttributes(erpInput, {
+            type: "number",
+            id: "erp",
+            name: "erp",
+            min: "0",
+            max: "10000",
+            step: "0.1",
+            value: "25",
+            size: "6"
+        });
+        //Tx Radiation Pattern Rotation
+        let patternRotationInput = document.createElement("input");
+        setAttributes(patternRotationInput, {
+            type: "number",
+            id: "rot",
+            name: "rot",
+            min: "0",
+            max: "359",
+            step: "0.1",
+            value: "0.0"
+        });
+        //Tx antenna Downtilt
+        let downtiltInput = document.createElement("input");
+        setAttributes(downtiltInput, {
+            type: "number",
+            id: "dt",
+            name: "dt",
+            min: "-10",
+            max: "90",
+            step: "0.1",
+            value: "0.0"
+        });
+        //Tx Downtilt Direction
+        let downtiltDirectionInput = document.createElement("input");
+        setAttributes(downtiltDirectionInput, {
+            type: "number",
+            id: "dtdir",
+            name: "dtdir",
+            min: "0",
+            max: "359",
+            step: "0.1",
+            value: "0.0"
+        });
+        //Antenna Radiation Patterns
+        let patternSelect = document.createElement("select");
+        setAttributes(patternSelect, {
+            id: "ant",
+            name: "ant",
+        });
+        //Antenna Radiation Patterns Options
+        // let patternOptions = ["omni", "LBE-5AC-Gen2-H", "PBE-M5-300-Hpol", "NBE-5AC-Gen2_HPol"];
+        let patternOptions = [[${radiationPatterns}]];
+        //Create and append the options
+        for (let i = 0; i < patternOptions.length; i++) {
+            let option = document.createElement("option");
+            option.value = patternOptions[i];
+            option.text = patternOptions[i];
+            patternSelect.appendChild(option);
+        }
+        //Tx Frequency (MHz) 20MHz to 100GHz (LOS after 20GHz)
+        let freqInput = document.createElement("input");
+        setAttributes(freqInput, {
+            type: "number",
+            id: "freq",
+            name: "freq",
+            min: "20",
+            max: "100000",
+            step: "any",
+            value: "2400",
+            size: "6"
+        });
+        //Radio Propagation Model
+        let propagationModelSelect = document.createElement("select");
+        setAttributes(propagationModelSelect, {
+            id: "pm",
+            name: "pm",
+        });
+        //Radio Propagation Model Options
+        // let propagationModelOptions = ["ITM", "LOS", "Hata"];
+        let propagationModelOptions = [[${propagationModels}]];
+        //Create and append the options
+        for (let i = 0; i < propagationModelOptions.length; i++) {
+            let option = document.createElement("option");
+            option.value = propagationModelOptions[i];
+            //make LOS default, without switching numbers
+            //if (option.value === "2") option.selected = "selected";
+            option.text = propagationModelOptions[i];
+            propagationModelSelect.appendChild(option);
+        }
+        //Polarization Direction (default=vertical)
+        let polarizationSelect = document.createElement("select");
+        setAttributes(polarizationSelect, {
+            id: "pol",
+            name: "pol"
+        });
+        let polarizationOptions = ["horizontal", "vertical"];
+        //Polarization Direction Options
+        for (let i = 0; i < polarizationOptions.length; i++) {
+            let option = document.createElement("option");
+            option.value = polarizationOptions[i];
+            option.text = polarizationOptions[i];
+            polarizationSelect.appendChild(option);
+        }
+        //Rx Height(s) (optional. Default=0.1)
+        let rxhInput = document.createElement("input");
+        setAttributes(rxhInput, {
+            type: "number",
+            id: "rxh",
+            name: "rxh",
+            min: "0",
+            max: "10000",
+            step: "0.1",
+            value: "0.1",
+            size: "6"
+        });
+
+        let latLabel = document.createElement("label");
+        latLabel.setAttribute("for", "lat");
+        latLabel.innerHTML = "Latitude:";
+
+        let lonLabel = document.createElement("label");
+        lonLabel.setAttribute("for", "lon");
+        lonLabel.innerHTML = "Longitude:";
+
+        let txhLabel = document.createElement("label");
+        txhLabel.setAttribute("for", "txh");
+        txhLabel.innerHTML = "Height (m):";
+
+        let erpLabel = document.createElement("label");
+        erpLabel.setAttribute("for", "erp");
+        erpLabel.innerHTML = "Output Power (dBd):";
+
+        let patternRotationLabel = document.createElement("label");
+        patternRotationLabel.setAttribute("for", "rot");
+        patternRotationLabel.innerHTML = "Heading (°):";
+
+        let downtiltLabel = document.createElement("label");
+        downtiltLabel.setAttribute("for", "dt");
+        downtiltLabel.innerHTML = "Downtilt (°):";
+
+        let downtiltDirectionLabel = document.createElement("label");
+        downtiltDirectionLabel.setAttribute("for", "dtdir");
+        downtiltDirectionLabel.innerHTML = "Downtilt Direction (°):";
+
+        let patternLabel = document.createElement("label");
+        patternLabel.setAttribute("for", "pattern");
+        patternLabel.innerHTML = "Antenna Pattern:";
+
+        let freqLabel = document.createElement("label");
+        freqLabel.setAttribute("for", "freq");
+        freqLabel.innerHTML = "Frequency (MHz):";
+
+        let propagationModelLabel = document.createElement("label");
+        propagationModelLabel.setAttribute("for", "pm");
+        propagationModelLabel.innerHTML = "Propagation Model:";
+
+        let polarisationLabel = document.createElement("label");
+        polarisationLabel.setAttribute("for", "pol");
+        polarisationLabel.innerHTML = "Polarisation:";
+
+        let rxhLabel = document.createElement("label");
+        rxhLabel.setAttribute("for", "rxh");
+        rxhLabel.innerHTML = "Rx Height (m):";
+
+        //append all inputs and selects to the corresponding labels
+        latLabel.append(latInput);
+        lonLabel.append(lonInput);
+        txhLabel.append(txhInput);
+        erpLabel.append(erpInput);
+        patternRotationLabel.append(patternRotationInput);
+        downtiltLabel.append(downtiltInput);
+        downtiltDirectionLabel.append(downtiltDirectionInput);
+        patternLabel.append(patternSelect);
+        freqLabel.append(freqInput);
+        propagationModelLabel.append(propagationModelSelect);
+        polarisationLabel.append(polarizationSelect);
+        rxhLabel.append(rxhInput);
+
+        //append all labels to the antenna form
+        antennaForm.append(latLabel);
+        antennaForm.append(lonLabel);
+        antennaForm.append(txhLabel);
+        antennaForm.append(erpLabel);
+        antennaForm.append(patternRotationLabel);
+        antennaForm.append(patternLabel);
+        antennaForm.append(freqLabel);
+
+        //div element containing all advanced options
+        let advancedOptionsDiv = document.createElement("div");
+        advancedOptionsDiv.style.display = "none";
+        advancedOptionsDiv.append(propagationModelLabel);
+        advancedOptionsDiv.append(downtiltLabel);
+        advancedOptionsDiv.append(downtiltDirectionLabel);
+        advancedOptionsDiv.append(polarisationLabel);
+        advancedOptionsDiv.append(rxhLabel);
+        antennaForm.append(advancedOptionsDiv);
+
+        //link element used for opening advanced options
+        let advancedOptionsLink = document.createElement("a");
+        advancedOptionsLink.innerText = "advanced options";
+        advancedOptionsLink.addEventListener("click", e => {
+            if (advancedOptionsLink.innerText === "advanced options") {
+                advancedOptionsLink.innerText = "show less";
+                advancedOptionsDiv.style.display = "";
+            } else {
+                advancedOptionsLink.innerText = "advanced options";
+                advancedOptionsDiv.style.display = "none";
+            }
+        });
+        antennaForm.append(advancedOptionsLink);
+
+        let submitButton = document.createElement("button");
+        submitButton.setAttribute("type", "submit");
+        submitButton.innerText = "Update Coverage";
+        antennaForm.append(submitButton);
+
+        let removeCoverageButton = document.createElement("button");
+        removeCoverageButton.addEventListener("click", e => removeCoverage(map));
+        removeCoverageButton.innerText = "Remove Coverage";
+        //only enable after coverage is created
+        removeCoverageButton.disabled = true;
+        removeCoverageButton.type = "button";
+        antennaForm.append(removeCoverageButton);
+
+        let removeAntennaButton = document.createElement("button");
+        removeAntennaButton.addEventListener("click", e => removeAntennaMarker(map));
+        removeAntennaButton.innerText = "Remove Antenna";
+        removeAntennaButton.type = "button";
+        antennaForm.append(removeAntennaButton);
+
+        //update latitude and longitude in popup when moving marker
+        marker.on("move", e => {
+            latInput.value = e.latlng.lat.toFixed(6);
+            lonInput.value = e.latlng.lng.toFixed(6);
+        })
+
+        //update position of marker after changing latitude and longitude in popup
+        latInput.addEventListener("change", e => {
+            if (e.target.validity.valid === true)
+                marker.setLatLng({lat: e.target.value, lng: marker.getLatLng().lng});
+        });
+        lonInput.addEventListener("change", e => {
+            if (e.target.validity.valid === true)
+                marker.setLatLng({lat: marker.getLatLng().lat, lng: e.target.value});
+        });
+
+        //event handler for submit button posting form data and updating coverage
+        antennaForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
+            let response = await sendCoverageData(antennaForm);
+            //remove old coverage if existing
+            removeCoverage(map);
+            coverageOverlay = displayCoverage(response.link, response.bounds, response.covID, map);
+            //enable button for removing coverage
+            removeCoverageButton.disabled = false;
+        });
+
+        return antennaForm;
+
+        /**
+         * Removes the coverage of the antenna represented by this marker from the map and disables removeCoverageButton.
+         *
+         * @param {L.map} map The leaflet map object the coverage is removed from.
+         */
+        function removeCoverage(map) {
+            //only disable if coverage is defined (==created)
+            if (coverageOverlay) coverageOverlay.removeFrom(map);
+            removeCoverageButton.disabled = true;
+        }
+
+        /**
+         * Removes the marker and coverage of the antenna represented by this marker from the map.
+         *
+         * @param {L.map} map The leaflet map object the coverage is removed from.
+         */
+        function removeAntennaMarker(map) {
+            marker.remove();
+            removeCoverage(map);
+        }
+    }
+
+    /**
+     * Sends the coverage form data to the server and returns a promise containing the calculation result.
+     *
+     * @param {HTMLFormElement} form The form element.
+     * @return {Promise<Response>} The promise containing the calculation result as a JSON Array with used parameters and link to coverage. .
+     */
+    async function sendCoverageData(form) {
+        const FD = new FormData(form);
+        return fetch("/coverages", {
+            method: 'POST',
+            body: FD // body data type must match "Content-Type" header
+        }).then(data => data.json());
+    }
+
+    /**
+     * Sets the attributes of the element.
+     *
+     * @see https://stackoverflow.com/questions/40110510/set-multi-attributes-at-once-without-jquery?noredirect=1
+     * @param {HTMLElement} el The element.
+     * @param {JSON} attrs The list of attributes and their values as a JSON array.
+     */
+    function setAttributes(el, attrs) {
+        Object.keys(attrs).forEach(function (attr) {
+            el.setAttribute(attr, attrs[attr]);
+        });
+    }
+
+    /**
+     * Displays the coverage from a url in the bounds by creating and returning a leaflet image overlay with id as value of attribute alt.
+     *
+     * @param {string} url The url of the coverage.
+     * @param {LatLng[]} bounds The bounds of the coverage with first 4 entries containing latitude and longitude of 2 opposite corners.
+     * @param {string} id The identifier of the coverage overlay element.
+     * @param {L.map} map The leaflet map object the coverage is added to.
+     * @return {L.imageOverlay} The coverage as a leaflet image overlay object.
+     */
+    function displayCoverage(url, bounds, id, map) {
+        // fetch(url).then()
+        return L.imageOverlay(url, [{lat: bounds[0], lon: bounds[1]}, {
+            lat: bounds[2],
+            lon: bounds[3]
+        }], {
+            alt: id,
+            opacity: 0.5
+        }).addTo(map);
+    }
+</script>
+</body>
+</html>
