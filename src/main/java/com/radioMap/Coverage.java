@@ -165,8 +165,10 @@ public class Coverage {
                 processOutput.append(readLine + System.lineSeparator());
             }
         }
-        String boundsOutput = processOutput.toString().strip();
-
+        //JRE 11 and higher
+//        String boundsOutput = processOutput.toString().trim();
+        //for downwards compatibility (right trim)
+        String boundsOutput = processOutput.toString().replaceAll("\\s+$", "");
 
 //      blocks thread until process is finished
         if (process.waitFor(this.maxGenerateCoverageTimeSeconds, SECONDS)) {
