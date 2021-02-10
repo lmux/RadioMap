@@ -23,7 +23,8 @@ cd src/main/resources/Signal-Server/src/
 make install
 ```
 For more information how to use Signal-Server, see https://github.com/lmux/Signal-Server
-- Compile and run the project with `./mvnw spring-boot:run`
+- Compile and run the project: `./mvnw spring-boot:run`
+
 Make sure that the system variable `$JAVA_HOME` used by maven to compile the project points to the Java Runtime Environment used in `pom.xml`.
 
 A `.jar` file can then be built with `java -jar build/libs/RadioMap.jar`.
