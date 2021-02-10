@@ -28,7 +28,7 @@ make install
 
 Make sure that the system variable `$JAVA_HOME` used by maven to compile the project points to the same version of the Java Runtime Environment used in `pom.xml`.
 
-A `.jar` file can then be built with `java -jar build/libs/RadioMap.jar`.
+A `.jar` file can then be built with `./mvnw clean package` and run with `java -jar build/libs/RadioMap.jar`.
 
 ## Add height and antenna data
 
