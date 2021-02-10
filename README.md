@@ -16,7 +16,8 @@ Networks should be built and controlled by the people who use them, with tools t
 
 ## Build the project
 
-- Clone the repo: `git clone https://github.com/lmux/RadioMap/`
+- Clone this repo with submodule Signal-Server: `git clone --recursive https://github.com/lmux/RadioMap/`
+
 - Build Signal-Server: 
 ```
 cd src/main/resources/Signal-Server/src/
