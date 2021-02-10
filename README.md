@@ -30,10 +30,24 @@ Make sure that the system variable `$JAVA_HOME` used by maven to compile the pro
 A `.jar` file can then be built with `java -jar build/libs/RadioMap.jar`.
 
 
-## Dependencies / Used Leaflet Plugins
-The project uses Spring MVC to create a RESTful Web Service. See [example](https://spring.io/guides/gs/rest-service/) and [Documentation for Spring Boot](https://spring.io/projects/spring-boot#overview).
+## Dependencies and Plugins
 
-[Leaflet](https://github.com/Leaflet/Leaflet) is used to create the interactive map.
+The dependencies used on the back end are listed in the `pom.xml`:
 
-The Leaflet plugin [Leaflet.Toolbar](https://github.com/Leaflet/Leaflet.toolbar) is used to create the toolbar on the map.
-[JSZip](https://github.com/Stuk/jszip/) is used to export the markers representing antennas with its properties and coverage from the map as a .kmz file.
+- Spring MVC (`spring-boot-starter-web`) is used to create a RESTful Web Service. See [example](https://spring.io/guides/gs/rest-service/) and [Documentation for Spring Boot](https://spring.io/projects/spring-boot#overview).
+
+- Thymeleaf (`spring-boot-starter-thymeleaf`) is used to create the website from the template.
+
+- `spring-boot-starter-test` is used for the test class for creating a coverage.
+
+- `springdoc-openapi-ui` is used for documenting the API based on the OpenAPI specification.
+
+- The plugin `maven-compiler-plugin` is used for compiling the project with maven.
+
+The dependencies used on the front end are listed under `src/main/resources/static/`:
+
+- [Leaflet](https://github.com/Leaflet/Leaflet) is used to create the interactive map.
+
+- The Leaflet plugin [Leaflet.Toolbar](https://github.com/Leaflet/Leaflet.toolbar) is used to create the toolbar on the map.
+
+- [JSZip](https://github.com/Stuk/jszip/) is used to export the markers representing antennas with its properties and coverage from the map as a .kmz file.
