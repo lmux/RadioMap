@@ -37,7 +37,7 @@ The bash script `get_srtm3_sdf.sh` automates these steps.
 
 After starting the web app, the directory `src/main/resources/Signal-Server/antenna/` is scanned for `.el` and `.az` radiation pattern files, which are then added as optional antennas on the website to create the coverage from.
 
-These files can be created by getting the .ant file, usually found on the manufacturers website of the directional antenna. Convert the .ant file with `./src/main/resources/Signal-Server/utils/antenna/ant2azel.py` (python needed)
+These files can be created by getting the .ant file, usually found on the manufacturers website of the (directional) antenna. Convert the .ant file with `./src/main/resources/Signal-Server/utils/antenna/ant2azel.py` (python needed)
 and place the resulting `.el` and `.az` files in the above mentioned directory.
 
 ## Dependencies and Plugins
