@@ -31,6 +31,8 @@ A `.jar` file can then be built with `java -jar build/libs/RadioMap.jar`.
 
 ## Dependencies / Used Leaflet Plugins
 The project uses Spring MVC to create a RESTful Web Service. See [example](https://spring.io/guides/gs/rest-service/) and [Documentation for Spring Boot](https://spring.io/projects/spring-boot#overview).
+
 [Leaflet](https://github.com/Leaflet/Leaflet) is used to create the interactive map.
+
 The Leaflet plugin [Leaflet.Toolbar](https://github.com/Leaflet/Leaflet.toolbar) is used to create the toolbar on the map.
 [JSZip](https://github.com/Stuk/jszip/) is used to export the markers representing antennas with its properties and coverage from the map as a .kmz file.
