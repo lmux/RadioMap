@@ -16,7 +16,8 @@ Networks should be built and controlled by the people who use them, with tools t
 
 ## Build the project
 
-- Clone the repo: `git clone https://github.com/lmux/RadioMap/`
+- Clone this repo with submodule Signal-Server: `git clone --recursive https://github.com/lmux/RadioMap/`
+
 - Build Signal-Server: 
 ```
 cd src/main/resources/Signal-Server/src/
@@ -25,9 +26,9 @@ make install
 [More information how to use Signal-Server](https://github.com/lmux/Signal-Server)
 - Compile and run the project: `./mvnw spring-boot:run`
 
-Make sure that the system variable `$JAVA_HOME` used by maven to compile the project points to the same version of the Java Runtime Environment used in `pom.xml`.
+Make sure that the system variable `$JAVA_HOME` used by maven to compile the project points to the same version of the Java Runtime Environment used in `pom.xml` (currently 1.8).
 
-A `.jar` file can then be built with `java -jar build/libs/RadioMap.jar`.
+A `.jar` file can then be built with `./mvnw clean package` and run with `java -jar target/RadioMap-0.0.1-SNAPSHOT.jar`.
 
 ## Add height and antenna data
 
