@@ -53,7 +53,7 @@ The dependencies used on the back end are listed in the `pom.xml`:
 
 - `springdoc-openapi-ui` is used for documenting the API based on the OpenAPI specification.
 
-- The plugin `maven-compiler-plugin` is used for compiling the project with maven.
+- The plugin `spring-boot-maven-plugin` is used for compiling the project with maven.
 
 The dependencies used on the front end are listed under `src/main/resources/static/`:
 
