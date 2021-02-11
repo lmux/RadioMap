@@ -31,6 +31,7 @@ Make sure that the system variable `$JAVA_HOME` used by maven to compile the pro
 A `.jar` file can then be built with `./mvnw clean package` and run with `java -jar target/RadioMap-0.0.1-SNAPSHOT.jar`.
 
 ## Add height and antenna data
+Height and antenna data are not needed to run the web app, although it is recommended to make use of them in order to generate more precise coverage maps.
 
 The web app is currently set up to use SRTM3 height data from `src/main/resources/Signal-Server/data/SRTM3`.
 SRTM3 height data can be downloaded from [USGS](https://dds.cr.usgs.gov/srtm/version2_1/SRTM3/Eurasia/) and converted into the format used by Signal-Server with `./Signal-Server/utils/sdf/srtm2sdf`.
