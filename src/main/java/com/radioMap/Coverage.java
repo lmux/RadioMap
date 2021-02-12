@@ -1,5 +1,7 @@
 package com.radioMap;
 
+import com.nar.NativeApp;
+
 import java.io.*;
 import java.util.*;
 
@@ -125,8 +127,10 @@ public class Coverage {
         if (this.ant != radiationPatterns.get(0)) antArg = antennaPatternDataDir.concat(this.ant);
 
 
-        //argument option and value have to be passed separately, first entry is command
-        String[] sigServerArgs = {"./src/main/resources/Signal-Server/signalserver",
+
+        //argument option and value have to be passed separately
+        String[] sigServerArgs = {
+                "signalserver",
                 this.heightData, this.heightDataDirSRTM3,
                 "-lat", Double.toString(this.lat),
                 "-lon", Double.toString(this.lon),
@@ -146,42 +150,44 @@ public class Coverage {
                 "-o", coverageFileArg,
                 hpArg};
 
-        ProcessBuilder pb = new ProcessBuilder(sigServerArgs);
-//        ProcessBuilder pb = new ProcessBuilder("./src/main/resources/Signal-Server/signalserver", latArg , lonArg, freqArg, txhArg, coverageFileArg);
 
-        //write errors to logfile
+        NativeApp app = new NativeApp();
+//        System.out.println( app.sayHello(0, new String[]{"Test"}) );
+        System.out.println( app.sayHello(sigServerArgs) );
+
+       //write errors to logfile
         File log = new File("coverageCreationLog.txt");
-        pb.redirectErrorStream(true);
-//        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
-        Process process = pb.start();
+//        pb.redirectErrorStream(true);
+////        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(log));
+//        Process process = pb.start();
 
 //        read output for information about bounds
 //        https://stackoverflow.com/questions/8149828/read-the-output-from-java-exec#8150065
-        StringBuilder processOutput = new StringBuilder();
-        try (BufferedReader processOutputReader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()));) {
-            String readLine;
-            while ((readLine = processOutputReader.readLine()) != null) {
-                processOutput.append(readLine + System.lineSeparator());
-            }
-        }
+//        StringBuilder processOutput = new StringBuilder();
+//        try (BufferedReader processOutputReader = new BufferedReader(
+//                new InputStreamReader(process.getInputStream()));) {
+//            String readLine;
+//            while ((readLine = processOutputReader.readLine()) != null) {
+//                processOutput.append(readLine + System.lineSeparator());
+//            }
+//        }
         //JRE 11 and higher
 //        String boundsOutput = processOutput.toString().trim();
         //for downwards compatibility (right trim)
-        String boundsOutput = processOutput.toString().replaceAll("\\s+$", "");
-
-//      blocks thread until process is finished
-        if (process.waitFor(this.maxGenerateCoverageTimeSeconds, SECONDS)) {
-            if (convertToPNG(coverageFileArg) == 0) {
-//            normal termination
-                this.status = "coverage created";
-                this.link = "/coverages/".concat(this.covID).concat(".png");
-                this.bounds = boundsOutput.substring(1).split("\\|");
-            }
-        } else {
-//            this.status = process.getErrorStream().toString();
-            this.status = "failed to create coverage";
-        }
+//        String boundsOutput = processOutput.toString().replaceAll("\\s+$", "");
+//
+////      blocks thread until process is finished
+//        if (process.waitFor(this.maxGenerateCoverageTimeSeconds, SECONDS)) {
+//            if (convertToPNG(coverageFileArg) == 0) {
+////            normal termination
+//                this.status = "coverage created";
+//                this.link = "/coverages/".concat(this.covID).concat(".png");
+//                this.bounds = boundsOutput.substring(1).split("\\|");
+//            }
+//        } else {
+////            this.status = process.getErrorStream().toString();
+//            this.status = "failed to create coverage";
+//        }
         return this;
     }
 
@@ -267,8 +273,10 @@ public class Coverage {
     }
 
     private static ArrayList<String> createRadiationPatternOptions(String radiationPatternFilePath) {
-        ArrayList<String> azFiles = readRadiationPatternFileNames("src/main/resources/Signal-Server/antenna");
+//        TODO:Fix function
+//        ArrayList<String> azFiles = readRadiationPatternFileNames("src/main/resources/Signal-Server/antenna");
         //acts as default option for no radiation pattern
+        ArrayList<String> azFiles = new ArrayList<String>();
         azFiles.add(0, "omni");
         return azFiles;
     }
