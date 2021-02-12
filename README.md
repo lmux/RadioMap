@@ -1,3 +1,6 @@
+This branch uses Java Native Interface to directly call Signal-Server functions from Java.
+It is in a very experimental state, with Signal-Server crashing the web app while calculating the coverage.
+
 # RadioMap
 
 A web app for displaying radio coverage on a map, using [Signal-Server](https://github.com/lmux/Signal-Server) to calculate the coverage.
