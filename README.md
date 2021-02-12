@@ -1,4 +1,4 @@
-This branch uses Java Native Interface to directly call Signal-Server functions from Java.
+This branch uses the [Java Native Interface](https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/jniTOC.html) to directly call Signal-Server functions from Java.
 It is in a very experimental state, with Signal-Server crashing the web app while calculating the coverage.
 
 # RadioMap
