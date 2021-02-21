@@ -7,7 +7,7 @@ A web app for displaying radio coverage on a map, using [Signal-Server](https://
 
 See [Demo](https://radiomap.michalux.net/). Using [SRTM3 height data in the region of Leipzig](https://dds.cr.usgs.gov/srtm/version2_1/SRTM3/Eurasia/) and [Ubiquiti .ant files](https://help.ui.com/hc/en-us/articles/204952114-airMAX-Antenna-Data).
 
-[Demo for API documentation](https://radiomap.michalux.net/swagger-ui.html)
+[Demo for API documentation](https://radiomap.michalux.net/api-docs.html)
 
 ## Motivation
 
