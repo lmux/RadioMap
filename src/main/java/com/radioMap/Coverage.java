@@ -5,26 +5,31 @@ import java.util.*;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * Class used for creating antenna coverages, holding all necessary antenna and coverage parameters.
+ *
+ * @author Michael Lux
+ * @author www.lmux.de
+ * @version 1.0
+ * @since 1.0
+ */
 public class Coverage {
     private final static ArrayList<String> radiationPatterns = createRadiationPatternOptions("src/main/resources/Signal-Server/antenna");
     //fixed parameters chosen on backend
+    //Signal-Server option 1: ITM, 2: LOS, 3: Hata, 4: ECC33, 5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth, 11: Egli VHF/UHF, 12: Soil
+    private final static List<String> propagationModels = Arrays.asList("ITM", "LOS", "Hata", "ECC33", "SUI", "COST-Hata", "FSPL", "ITWOM", "Ericsson", "Plane earth", "Egli VHF/UHF", "Soil");
     //TODO: using best available height data in region
-    private final String heightData = "-sdf";
-    private final String heightDataDirSRTM3 = "src/main/resources/Signal-Server/data/SRTM3";
-    private final String heightDataDirLIDAR = "src/main/resources/Signal-Server/data/LIDAR";
-    private final String antennaPatternDataDir = "src/main/resources/Signal-Server/antenna/";
+    private final static String heightData = "-sdf";
+    private final static String heightDataDirSRTM3 = "src/main/resources/Signal-Server/data/SRTM3";
+    private final static String heightDataDirLIDAR = "src/main/resources/Signal-Server/data/LIDAR";
+    private final static String antennaPatternDataDir = "src/main/resources/Signal-Server/antenna/";
+    private final static String coverageFileDir = "src/main/resources/coverages/";
+    private final static int maxGenerateCoverageTimeSeconds = 10;
     //TODO: give client option to specify threshold of received signal power/field strength
     private final double rxThreshold = -90;
     //TODO: give client option to choose radius
     private final double radius = 5;    //kilometers with argument -m (metric)
     private final double resolution = 3500;
-    private final String coverageFileDir = "src/main/resources/coverages/";
-    private final int maxGenerateCoverageTimeSeconds = 10;
-
-    //Signal-Server option 1: ITM, 2: LOS, 3: Hata, 4: ECC33, 5: SUI, 6: COST-Hata, 7: FSPL, 8: ITWOM, 9: Ericsson, 10: Plane earth, 11: Egli VHF/UHF, 12: Soil
-    private final static List<String> propagationModels = Arrays.asList("ITM", "LOS", "Hata", "ECC33", "SUI", "COST-Hata", "FSPL", "ITWOM", "Ericsson", "Plane earth", "Egli VHF/UHF", "Soil");
-    //    private final List<String> radiationPatternFiles = Arrays.asList("omni", "LBE-5AC-Gen2-H", "PBE-M5-300-Hpol", "NBE-5AC-Gen2_HPol");
-//    private final static List<String> radiationPatternFileNames = RadioMapApplication.getRadiationPatternFileNames();
 
     //chosen on client-side, only expose these with getters for response
     private final double lat;
@@ -45,9 +50,8 @@ public class Coverage {
     private String[] bounds;
     //create id that is unique, hence no collisions, no information gained from name
     //name compatible with file system, other users cant guess files openly available
-    final String covID;
+    private final String covID;
     private String link;
-
 
     public Coverage(double lat, double lon, double txh, double erp, double rot, String ant, double freq, String pm, double dt, double dtdir, String pol, double rxh) {
         this.covID = UUID.randomUUID().toString();
@@ -67,6 +71,11 @@ public class Coverage {
         this.link = "";
     }
 
+    /**
+     * Creates the coverage as .ppm and .png files in the coverageFileDir by starting a process of Signal-Server, writing outputs to coverageCreationLog.txt
+     *
+     * @return {Coverage} The coverage object including antenna and coverage creation attributes, status of creation and link to resource.
+     */
     public Coverage generateCoverage() throws IOException, InterruptedException {
         //sanitizing parameters
         if (this.lat < -70.0 || this.lat > 70.0 || this.lon < -180.0 || this.lon > 180.0) {
@@ -94,7 +103,7 @@ public class Coverage {
             this.status = "Frequency out of bounds";
             return this;
         }
-        if(!propagationModels.contains(pm)) {
+        if (!propagationModels.contains(pm)) {
             this.status = "Invalid propagation model selection";
             return this;
         }
@@ -107,7 +116,7 @@ public class Coverage {
             this.status = "Downtilt direction out of bounds";
             return this;
         }
-        if (!(this.pol.equals("horizontal") || this.pol.equals("vertical") )) {
+        if (!(this.pol.equals("horizontal") || this.pol.equals("vertical"))) {
             this.status = "Invalid polarisation selection";
             return this;
         }
@@ -135,7 +144,7 @@ public class Coverage {
                 "-rot", Double.toString(this.rot),
                 "-ant", antArg,
                 "-f", Double.toString(this.freq),
-                "-pm", Integer.toString(propagationModels.indexOf(pm)+1),//program starts counting at 1
+                "-pm", Integer.toString(propagationModels.indexOf(pm) + 1),//program starts counting at 1
                 "-dt", Double.toString(this.dt),
                 "-dtdir", Double.toString(this.dtdir),
                 "-rxh", Double.toString(this.rxh),
@@ -185,6 +194,12 @@ public class Coverage {
         return this;
     }
 
+    /**
+     * Converts the given .ppm file to .png and saves it in same directory as the original file.
+     *
+     * @param {String} file The .ppm file including its path.
+     * @return {int} The exit value of the process represented by this Process object. By convention, the value 0 indicates normal termination.
+     */
     public int convertToPNG(String file) throws IOException, InterruptedException {
 //        Load Image from https://docs.oracle.com/javase/tutorial/2d/images/loadimage.html
 /*        BufferedImage img = null;
@@ -196,10 +211,61 @@ public class Coverage {
         } catch (IOException e) {
         }*/
         //TODO:make conversion in Java http://im4java.sourceforge.net/ or C++/c
-//        best imagemagick api in c, and only write ppm file im memory before writing png
+        //best imagemagick api in c, and only write ppm file im memory before writing png
         ProcessBuilder pb = new ProcessBuilder("convert", file.concat(".ppm"), "-transparent", "white", "-channel", "Alpha", file.concat(".png"));
         Process process = pb.start();
         return process.waitFor();
+    }
+
+    /**
+     * Reads and returns the names of the antennas with .az and .el radiation pattern files in the given directory, adding omnidirectional antenna as first entry.
+     *
+     * @param {String} radiationPatternFilePath The file path the radiation patterns are located in.
+     * @return {ArrayList<String>} The list of antennas with .az and .el files in the given directory.
+     */
+    private static ArrayList<String> createRadiationPatternOptions(String radiationPatternFilePath) {
+        ArrayList<String> azFiles = readRadiationPatternFileNames(radiationPatternFilePath);
+        //acts as default option for no radiation pattern
+        azFiles.add(0, "omni");
+        return azFiles;
+    }
+
+    /**
+     * Reads and returns the names of the antennas with .az and .el radiation pattern files in given directory.
+     *
+     * @param {String} radiationPatternFilePath The file path the radiation patterns are located in.
+     * @return {ArrayList<String>} The list of antennas with .az and .el files in the given directory.
+     */
+    private static ArrayList<String> readRadiationPatternFileNames(String radiationPatternFilePath) {
+        File folder = new File(radiationPatternFilePath);
+        ArrayList<String> azFiles = new ArrayList<>();
+        ArrayList<String> elFiles = new ArrayList<>();
+        File[] listOfFiles = folder.listFiles();
+        assert listOfFiles != null;
+        for (File listOfFile : listOfFiles) {
+            String fileName = listOfFile.getName();
+            if (fileName.endsWith(".az")) {
+                //cut off file extension
+                azFiles.add(fileName.substring(0, fileName.lastIndexOf('.')));
+            } else if (fileName.endsWith(".el")) {
+                elFiles.add(fileName.substring(0, fileName.lastIndexOf('.')));
+            }
+        }
+        //only keep files that exist with .az and .el extension
+        for (int i = 0; i < azFiles.size(); i++)
+            if (!elFiles.contains(azFiles.get(i))) {
+                azFiles.remove(i);
+            }
+        System.out.println("Detected Antenna Radiation Pattern Files in src/main/resources/Signal-Server/antenna: " + azFiles);
+        return azFiles;
+    }
+
+    public static ArrayList<String> getRadiationPatterns() {
+        return radiationPatterns;
+    }
+
+    public String getPm() {
+        return pm;
     }
 
     public String getStatus() {
@@ -264,43 +330,5 @@ public class Coverage {
 
     public static List<String> getPropagationModels() {
         return propagationModels;
-    }
-
-    private static ArrayList<String> createRadiationPatternOptions(String radiationPatternFilePath) {
-        ArrayList<String> azFiles = readRadiationPatternFileNames("src/main/resources/Signal-Server/antenna");
-        //acts as default option for no radiation pattern
-        azFiles.add(0, "omni");
-        return azFiles;
-    }
-
-
-    private static ArrayList<String> readRadiationPatternFileNames(String radiationPatternFilePath) {
-        File folder = new File(radiationPatternFilePath);
-        ArrayList<String> azFiles = new ArrayList<>();
-        ArrayList<String> elFiles = new ArrayList<>();
-        File[] listOfFiles = folder.listFiles();
-        assert listOfFiles != null;
-        for (File listOfFile : listOfFiles) {
-            String fileName = listOfFile.getName();
-            if (fileName.endsWith(".az")) {
-                //cut off file extension
-                azFiles.add(fileName.substring(0, fileName.lastIndexOf('.')));
-            } else if (fileName.endsWith(".el")) {
-                elFiles.add(fileName.substring(0, fileName.lastIndexOf('.')));
-            }
-        }
-        //only keep files that exist with .az and .el extension
-        for (int i = 0; i < azFiles.size(); i++)
-            if (!elFiles.contains(azFiles.get(i))) {
-                azFiles.remove(i);
-            }
-        System.out.println("Detected Antenna Radiation Pattern Files in src/main/resources/Signal-Server/antenna: " + azFiles);
-        return azFiles;
-    }
-    public static ArrayList<String> getRadiationPatterns() {
-        return radiationPatterns;
-    }
-    public String getPm() {
-        return pm;
     }
 }
