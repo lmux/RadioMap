@@ -1,7 +1,10 @@
 # RadioMap
 
-A web app for displaying radio coverage on a map, using [Signal-Server](https://github.com/lmux/Signal-Server) to calculate the coverage.
+A web app for displaying the radio coverage of an specified antenna on a map.
 
+Using [Signal-Server](https://github.com/lmux/Signal-Server) to calculate the coverage.
+
+<img src="https://lmux.de/assets/mobilpopup.png" height="450"/> <img src="https://lmux.de/assets/responsivecoverage.png" height="450"/>
 
 ## Demo 
 
