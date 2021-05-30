@@ -4,11 +4,11 @@ A web app for displaying the radio coverage of an specified antenna on a map.
 
 Using [Signal-Server](https://github.com/lmux/Signal-Server) to calculate the coverage.
 
-<img src="https://lmux.de/assets/mobilpopup.png" height="450"/> <img src="https://lmux.de/assets/responsivecoverage.png" height="450"/>
+<img src="https://lmux.de/assets/mobilpopup.png" width="27%"/> <img src="https://lmux.de/assets/responsivecoverage.png" width="65%"/>
 
 ## Demo 
 
-See https://radiomap.lmux.de/. Using [SRTM3 height data in the region of Leipzig](https://dds.cr.usgs.gov/srtm/version2_1/SRTM3/Eurasia/) and [Ubiquiti .ant files](https://help.ui.com/hc/en-us/articles/204952114-airMAX-Antenna-Data).
+See https://radiomap.lmux.de/. Using [SRTM3 height data in the region of Germany](https://dds.cr.usgs.gov/srtm/version2_1/SRTM3/Eurasia/) and [Ubiquiti .ant files](https://help.ui.com/hc/en-us/articles/204952114-airMAX-Antenna-Data).
 
 [Demo for API documentation](https://radiomap.lmux.de/api-doc.html)
 
