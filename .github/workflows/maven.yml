@@ -15,7 +15,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: build signalserver, signalserverHD and signalserverLIDAR
       working-directory: src/main/resources/Signal-Server/src
       run: make install
