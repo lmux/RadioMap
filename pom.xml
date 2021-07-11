@@ -46,8 +46,11 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+                <!--dont filter binary resources-->
+                <!--https://maven.apache.org/plugins/maven-resources-plugin/examples/binaries-filtering.html                -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
             </plugin>
         </plugins>
     </build>
