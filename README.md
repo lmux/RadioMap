@@ -1,5 +1,7 @@
 # RadioMap
 
+[![Java/Cpp CI with Maven/Make](https://github.com/lmux/RadioMap/actions/workflows/maven.yml/badge.svg)](https://github.com/lmux/RadioMap/actions/workflows/maven.yml)
+
 A web app for displaying the radio coverage of a specified antenna on a map.
 
 Using [Signal-Server](https://github.com/lmux/Signal-Server) to calculate the coverage.
