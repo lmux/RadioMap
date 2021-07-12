@@ -27,5 +27,5 @@ jobs:
       with:
         java-version: '8'
         distribution: 'adopt'
-    - name: Build with Maven with debug logging
-      run: mvn -X -e -B package --file pom.xml
+    - name: Build with Maven wrapper with debug logging
+      run: ./mvnw -X -e -B clean package --file pom.xml
